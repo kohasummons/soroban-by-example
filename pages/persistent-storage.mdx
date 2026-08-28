@@ -23,11 +23,22 @@ self.
 
 ## Explanation
 
-The `setup` function intializes the persistent storage method using the DataKey `enum` created under `contracttype` keyword.
+Persistent storage is for data that must outlive a single invocation and survive contract upgrades: balances, ownership, user records. Every entry is addressed by a key; here the keys live in the `DataKey` enum so they are all in one place. A variant can carry data, which is how `Profile(Address)` gives every user their own slot.
 
-Enums (or enumerations) in Rust are a data type that allows you to define a set of named constants. They're useful for representing values that can only be one of a fixed set of possibilities.
+Any type that implements the SDK's storage traits can be stored, and the API is the same for all of them:
 
-The `extend_persistent` function extends the set TTL (Time-To-Live) for the persistent storage to 5000 ledgers if less than 1000 ledgers. It uses the value derived from `DataKey` established above.
+- **Primitives** (`u32`, `i128`, `bool`) — `increment` reads with `get`, falls back with `unwrap_or`, and writes with `set`.
+- **`String`** — `set_greeting` / `get_greeting`. `get` returns `Option`, so a missing value is `None` rather than a panic.
+- **`Address`** — `set_owner` stores the caller after `require_auth`, the usual way to record who controls a contract.
+- **`Vec`** — collections are values, not references. `add_score` loads the whole `Vec`, pushes, and writes it back.
+- **`Map`** — `credit` and `balance_of` do the same load–update–store cycle with a `Map<Symbol, i128>`.
+- **Structs** — anything marked `#[contracttype]` stores directly; `set_profile` writes a `Profile` under a per-user key.
+
+`has` checks whether a key exists without deserialising the value, and `remove` deletes an entry (and stops paying rent for it).
+
+### TTL
+
+Persistent entries are archived when their TTL runs out, so every write is followed by `extend_ttl(&key, TTL_THRESHOLD, TTL_EXTEND_TO)`: if fewer than 1000 ledgers remain, top the entry up to 5000. Reads do not need it, but anything that should stay live must be extended somewhere on its write path.
 
 ## Run in Playground
 
