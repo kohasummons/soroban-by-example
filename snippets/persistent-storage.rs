@@ -53,9 +53,7 @@ impl PersistentStorage {
     pub fn get_greeting(env: Env) -> Option<String> {
         env.storage().persistent().get(&DataKey::Greeting)
     }
-
-    // ---------- Address ----------
-
+    
     pub fn set_owner(env: Env, owner: Address) {
         owner.require_auth();
         let store = env.storage().persistent();
@@ -66,8 +64,6 @@ impl PersistentStorage {
     pub fn get_owner(env: Env) -> Option<Address> {
         env.storage().persistent().get(&DataKey::Owner)
     }
-
-    // ---------- Vec ----------
 
     /// Read the whole Vec, mutate it, write it back.
     pub fn add_score(env: Env, score: u32) -> Vec<u32> {
